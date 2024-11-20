@@ -48,7 +48,7 @@ services:
   db:
     restart: "no"
     ports:
-      - "5439:5432"
+      - "5432:5432"
 
   adminer:
     restart: "no"
@@ -92,15 +92,32 @@ services:
       - "1080:1080"
       - "1025:1025"
 
-  frontend:
-    restart: "no"
-    ports:
-      - "5173:80"
-    build:
-      context: ./frontend
-      args:
-        - VITE_API_URL=http://localhost:8000
-        - NODE_ENV=development
+  # frontend:
+  #   restart: "no"
+  #   ports:
+  #     - "5173:80"
+  #   build:
+  #     context: ./frontend
+  #     args:
+  #       - VITE_API_URL=http://localhost:8000
+  #       - NODE_ENV=development
+  #   volumes:
+  #   - ./frontend:/app
+    
+  # frontend:
+  #   restart: "no"
+  #   ports:
+  #     - "5173:5173"  # Match the development server port
+  #   build:
+  #     context: ./frontend
+  #     args:
+  #       - VITE_API_URL=http://localhost:8000
+  #       - NODE_ENV=development
+  #   volumes:
+  #     - ./frontend:/app
+  #   command: npm run dev  # Start the development server
+  #   environment:
+  #     - CHOKIDAR_USEPOLLING=true  # Optional for file watching issues
 
   playwright:
     build:
