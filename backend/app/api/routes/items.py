@@ -5,7 +5,16 @@ from fastapi import APIRouter, HTTPException
 from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, SessionDep
-from app.models import Item, ItemCreate, ItemPublic, ItemsPublic, ItemUpdate, Message
+from app.core.db import database
+from app.models import (
+    Item,
+    ItemCreate,
+    ItemPublic,
+    ItemsPublic,
+    ItemUpdate,
+    Message,
+    UserPublic,
+)
 
 router = APIRouter()
 
@@ -93,12 +102,24 @@ def update_item(
 
 
 @router.delete("/{id}")
-def delete_item(
+async def delete_item(
     session: SessionDep, current_user: CurrentUser, id: uuid.UUID
 ) -> Message:
     """
     Delete an item.
     """
+    try:
+        res = await database.fetch(
+            """
+                SELECT *
+                FROM public.user;
+            """
+        )
+    except Exception as e:
+        print(f"Database error: {e}")
+        raise HTTPException(status_code=500, detail="Database query failed")
+    print(res)
+
     item = session.get(Item, id)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
@@ -107,3 +128,18 @@ def delete_item(
     session.delete(item)
     session.commit()
     return Message(message="Item deleted successfully")
+
+
+@router.get("/test", dependencies=[])
+async def get_user_names() -> Any:
+    try:
+        res = await database.fetch(
+            """
+                SELECT *
+                FROM public.users;
+            """
+        )
+    except Exception as e:
+        print(f"Database error: {e}")
+        raise HTTPException(status_code=500, detail="Database query failed")
+    return res

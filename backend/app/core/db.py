@@ -1,3 +1,7 @@
+import json
+
+import asyncpg
+import redis
 from sqlmodel import Session, create_engine, select
 
 from app import crud
@@ -31,3 +35,63 @@ def init_db(session: Session) -> None:
             is_superuser=True,
         )
         user = crud.create_user(session=session, user_create=user_in)
+
+
+class Database:
+    def __init__(self):
+        self._pool = None
+
+    async def connect(self):
+        self._pool = await asyncpg.create_pool(
+            host=settings.POSTGRES_SERVER,
+            port=settings.POSTGRES_PORT,
+            database=settings.POSTGRES_DB,
+            user=settings.POSTGRES_USER,
+            password=settings.POSTGRES_PASSWORD,
+            min_size=1, max_size=10, timeout=60)
+
+    async def disconnect(self):
+        await self._pool.close()
+
+    async def fetch(self, query: str, *args):
+        async with self._pool.acquire() as connection:
+            return await connection.fetch(query, *args)
+
+    async def fetchrow(self, query: str, *args):
+        async with self._pool.acquire() as connection:
+            return await connection.fetchrow(query, *args)
+
+    async def execute(self, query: str, *args):
+        async with self._pool.acquire() as connection:
+            return await connection.execute(query, *args)
+
+
+# class RedisDatabase:
+#     def __init__(self):
+#         self.r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
+#
+#     def get_user_token(self, user_id):
+#         return self.r.get(f"{user_id}:session")
+#
+#     def set_user_token(self, user_id, token):
+#         return self.r.set(f"{user_id}:session", token)
+#
+#     def get_top_5_tickers(self):
+#         stored_data = self.r.get('funding:top:5:tickets')
+#
+#         if stored_data:
+#             data = stored_data.decode('utf-8')
+#             return json.loads(data)
+#         return None
+#
+#     def get_top_5_tickers_by_volume(self):
+#         stored_data = self.r.get('funding:top:5:tickets:volume')
+#
+#         if stored_data:
+#             data = stored_data.decode('utf-8')
+#             return json.loads(data)
+#         return None
+
+
+database = Database()
+# redis_database = RedisDatabase()
