@@ -1,19 +1,17 @@
 import uuid
-from typing import Any, List  # noqa: UP035
+from typing import Any
 
-from fastapi import APIRouter, HTTPException
-from sqlmodel import func, select
+from fastapi import APIRouter
 
-from app.api.deps import CurrentUser, SessionDep
+from app.api.deps import CurrentUser
 from app.core.db import database
-from app.models import Message
 
 router = APIRouter()
 
 
 @router.get("/")
 def read_items(
-    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
+    current_user: CurrentUser
 ) -> Any:
     """
     Retrieve items.
