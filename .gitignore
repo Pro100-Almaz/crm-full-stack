@@ -8,3 +8,12 @@ node_modules/
 venv/
 
 /frontend
+
+/backend/__pycache__
+/backend/app.egg-info
+/backend/*.pyc
+/backend/.mypy_cache
+/backend/.coverage
+/backend/htmlcov
+/backend/.cache
+/backend/.venv
