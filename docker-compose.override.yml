@@ -86,25 +86,25 @@ services:
       SMTP_TLS: "false"
       EMAILS_FROM_EMAIL: "noreply@example.com"
 
-  frontend:
-    restart: "no"
-    ports:
-      - "5173:80"
-    build:
-      context: ../crm-frontend
-      args:
-        - VITE_API_URL=http://localhost:8000
-        - NODE_ENV=development
-
   mailcatcher:
     image: schickling/mailcatcher
     ports:
       - "1080:1080"
       - "1025:1025"
 
+  frontend:
+    restart: "no"
+    ports:
+      - "5173:80"
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_URL=http://localhost:8000
+        - NODE_ENV=development
+
   playwright:
     build:
-      context: ../crm-frontend
+      context: ./frontend
       dockerfile: Dockerfile.playwright
       args:
         - VITE_API_URL=http://backend:8000
@@ -122,8 +122,8 @@ services:
       - PLAYWRIGHT_HTML_HOST=0.0.0.0
       - CI=${CI}
     volumes:
-      - ../crm-frontend/blob-report:/app/blob-report
-      - ../crm-frontend/test-results:/app/test-results
+      - ./frontend/blob-report:/app/blob-report
+      - ./frontend/test-results:/app/test-results
     ports:
       - 9323:9323
 
