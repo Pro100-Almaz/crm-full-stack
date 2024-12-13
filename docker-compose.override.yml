@@ -45,11 +45,6 @@ services:
 #      - traefik-public
 #      - default
 
-  tls:
-    certificates:
-      - certFile: /certificates/cert.crt
-        keyFile: /certificates/privkey.key
-
   db:
     restart: "no"
     ports:
