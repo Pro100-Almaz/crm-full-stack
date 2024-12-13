@@ -1,5 +1,5 @@
 import uuid
-from typing import List, Optional  # noqa: UP035
+from typing import List, Optional, Dict  # noqa: UP035
 
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
@@ -92,6 +92,10 @@ class Branch(SQLModel, table=True):
     newsletter_address: Optional[str] = Field(default=None, max_length=200)
     address_note: Optional[str] = Field(default=None, max_length=500)
     time_zone: str = Field(min_length=1, max_length=100)
+    send_notification: Optional[Dict] = Field(default=None, sa_column_kwargs={"type_": "JSONB"})
+    work_hours: str = Field(default="8:00-18:00", min_length=1, max_length=100)
+    responsible_user_for_authomative_actions: Optional[uuid.UUID] = Field(default=None, foreign_key="user.id")
+    display_color: str = Field(min_length=1, max_length=50)
     group_id: Optional[uuid.UUID] = Field(default=None, foreign_key="branchgroup.id")
     group: Optional["BranchGroup"] = Relationship(back_populates="branches")
     workdays: str = Field(default="")
