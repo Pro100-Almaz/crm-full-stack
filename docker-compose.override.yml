@@ -50,7 +50,7 @@ services:
     ports:
       - "5432:5432"
 
- adminer:
+  adminer:
     restart: "no"
     ports:
       - "8080:8080"
@@ -83,13 +83,13 @@ services:
        SMTP_TLS: "false"
        EMAILS_FROM_EMAIL: "noreply@example.com"
 
- mailcatcher:
+  mailcatcher:
     image: schickling/mailcatcher
     ports:
       - "1080:1080"
       - "1025:1025"
 
- frontend:
+  frontend:
     restart: "no"
     ports:
       - "5173:5173"
@@ -99,7 +99,7 @@ services:
         - VITE_API_URL=http://localhost:8000
         - NODE_ENV=development
 
- playwright:
+  playwright:
     build:
       context: ./frontend
       dockerfile: Dockerfile.playwright

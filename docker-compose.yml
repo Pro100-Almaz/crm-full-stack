@@ -19,7 +19,7 @@ services:
       - POSTGRES_USER=${POSTGRES_USER?Variable not set}
       - POSTGRES_DB=${POSTGRES_DB?Variable not set}
 
- adminer:
+  adminer:
    image: adminer
    restart: always
    networks:
@@ -42,7 +42,7 @@ services:
      - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-https.tls.certresolver=le
      - traefik.http.services.${STACK_NAME?Variable not set}-adminer.loadbalancer.server.port=8080
 
- prestart:
+  prestart:
    image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
    build:
      context: ./backend
@@ -135,7 +135,7 @@ services:
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.middlewares=https-redirect
       - traefik.http.middlewares.${STACK_NAME?Variable not set}-backend-http.redirectscheme.scheme=https
 
- frontend:
+  frontend:
    image: '${DOCKER_IMAGE_FRONTEND?Variable not set}:${TAG-latest}'
    restart: always
    networks:
