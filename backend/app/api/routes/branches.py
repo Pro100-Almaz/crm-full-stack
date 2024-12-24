@@ -82,7 +82,6 @@ async def create_branch(
             return {"Status": "success", "status_code": 201}
 
         except Exception as e:
-            print(e)
             raise HTTPException(status_code=400, detail="Insertion error")
 
     raise HTTPException(status_code=403, detail="Forbidden, has no enough authority")
@@ -148,3 +147,36 @@ async def update_branch(
             raise HTTPException(status_code=400, detail="Insertion error")
 
     raise HTTPException(status_code=403, detail="Forbidden, has no enough authority")
+
+
+@router.delete("/")
+async def delete_branch(
+    branch_id: uuid.UUID, current_user: CurrentUser
+) -> Any:
+    has_authority = await database.fetchrow(
+        """
+            SELECT branch_update
+            FROM public.role
+            WHERE id = (
+                SELECT job_role
+                FROM public.user
+                WHERE id = $1
+            )
+        """,
+        current_user.id,
+    )
+
+    if has_authority:
+        try:
+            await database.execute(
+                """
+                    DELETE FROM public.branch
+                    WHERE id = $1;
+                """, branch_id
+            )
+
+            return {"Status": "success", "status_code": 204, "message": "Branch deleted"}
+        except Exception:
+            raise HTTPException(status_code=400, detail="Insertion error")
+    else:
+        raise HTTPException(status_code=403, detail="Forbidden, has no enough authority")
