@@ -12,6 +12,20 @@ from app.core.db import database
 router = APIRouter()
 
 
+async def check_overlapping_event(start_time: datetime, end_time: datetime, event_id: int | None = None) -> bool:
+    query = """
+        SELECT 1 FROM calendar.events
+        WHERE start_time < $2 AND end_time > $1
+    """
+    params = [start_time, end_time]
+    if event_id:
+        query += " AND id != $3"
+        params.append(event_id)
+
+    result = await database.fetchrow(query, *params)
+    return result is not None
+
+
 async def get_events_query(
     user_id,
     skip: int = 0,
@@ -21,7 +35,7 @@ async def get_events_query(
     title: str | None = None,
     sort_by: str = "start_time",
 ) -> list[dict]:
-    base_query = "SELECT id, title, description, start_time, end_time, user_id, room_id FROM calendar.events"
+    base_query = "SELECT id, title, description, start_time, end_time, user_id, room FROM calendar.events"
     conditions = []
     values = []
     counter = 1
@@ -67,12 +81,12 @@ async def update_event_query(event_id: int, event: EventUpdate) -> dict | None:
         return await get_event(event_id)  # Nothing to update
 
     set_clause = ", ".join(fields)
-    query = f"UPDATE events SET {set_clause} WHERE id = ${counter} RETURNING id, title, description, start_time, end_time;"
+    query = (f"UPDATE calendar.events SET {set_clause} WHERE id = ${counter} "
+             f"RETURNING id, title, description, start_time, end_time, user_id, room;")
     values.append(event_id)
     return await database.fetchrow(query, *values)
 
 
-# Create Event
 @router.post("/events/", status_code=status.HTTP_201_CREATED)
 async def create_event(event: EventCreate, current_user: CurrentUser):
     if event.end_time <= event.start_time:
@@ -81,12 +95,19 @@ async def create_event(event: EventCreate, current_user: CurrentUser):
             detail="End time must be after start time.",
         )
 
+    overlap = await check_overlapping_event(event.start_time, event.end_time)
+    if overlap:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Event times overlap with an existing event."
+        )
+
     room_id = await database.fetchrow(
         """
             SELECT 1
             FROM public.room
             WHERE id = $1
-        """, event.room_id
+        """, event.room
     )
 
     if not room_id:
@@ -99,17 +120,17 @@ async def create_event(event: EventCreate, current_user: CurrentUser):
 
     new_event = await database.execute(
         """
-            INSERT INTO events (title, description, start_time, end_time, user_id, room_id)
-            VALUES ($1, $2, $3, $4)
-            RETURNING id, title, description, start_time, end_time;
-        """, event.title, event.description, event.start_time, event.end_time, user_id, event.room_id
+            INSERT INTO calendar.events (title, description, start_time, end_time, user_id, room)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id, title, description, start_time, end_time, user_id, room;
+        """, event.title, event.description, event.start_time, event.end_time, user_id, event.room
     )
     return new_event
 
 
-# Read All Events with optional filtering
 @router.get("/events/")
 async def get_events(
+    current_user: CurrentUser,
     skip: int = 0,
     limit: int = Query(100, le=100),
     start_date: datetime | None = Query(
@@ -119,8 +140,7 @@ async def get_events(
         None, description="Filter events up to this date"
     ),
     title: str | None = Query(None, description="Search by title"),
-    sort_by: str = Query("start_time", description="Sort by field"),
-    current_user: CurrentUser | None = None
+    sort_by: str = Query("start_time", description="Sort by field")
 ):
     events = await get_events_query(
         skip=skip,
@@ -135,9 +155,8 @@ async def get_events(
     return events
 
 
-# Read Single Event
 @router.get("/events/{event_id}")
-async def get_event(event_id: int):
+async def get_event(event_id: int, current_user: CurrentUser):
     event = await database.fetchrow(
         """
             SELECT *
@@ -145,6 +164,7 @@ async def get_event(event_id: int):
             WHERE id = $1
         """, event_id
     )
+
     if not event:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Event not found."
@@ -152,12 +172,11 @@ async def get_event(event_id: int):
     return event
 
 
-# Update Event
 @router.put("/events/{event_id}")
 async def update_event(event_id: int, event_update: EventUpdate, current_user: CurrentUser):
     existing_event = await database.fetchrow(
         """
-            SELECT *
+            SELECT 1
             FROM calendar.events
             WHERE id = $1
         """, event_id
@@ -176,22 +195,36 @@ async def update_event(event_id: int, event_update: EventUpdate, current_user: C
             detail="End time must be after start time.",
         )
 
+    overlap = await check_overlapping_event(
+        new_start_time, new_end_time, event_id=event_id
+    )
+    if overlap:
+        raise ValueError("Event times overlap with an existing event.")
+
     updated_event = await update_event_query(event_id, event_update)
     return updated_event
 
 
-# Delete Event
 @router.delete("/events/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def api_delete_event(event_id: int):
-    existing_event = await get_event(event_id)
+async def api_delete_event(event_id: int, current_user: CurrentUser):
+    existing_event = await database.fetchrow(
+        """
+            SELECT 1
+            FROM calendar.events
+            WHERE id = $1 AND user_id = $2;
+        """, event_id, current_user.id
+    )
+
     if not existing_event:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Event not found."
         )
-    success = await database.execute("DELETE FROM events WHERE id = $1;", event_id)
+
+    success = await database.execute("DELETE FROM calendar.events WHERE id = $1;", event_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete event.",
         )
+
     return

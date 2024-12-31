@@ -28,7 +28,7 @@ class EventBase(BaseModel):
     start_time: datetime = Field(..., example="2024-05-01T10:00:00")
     end_time: datetime = Field(..., example="2024-05-01T11:00:00")
     user_id: str = None
-    room_id: str = "Online"
+    room: int = 1
 
 class EventCreate(EventBase):
     pass
@@ -39,7 +39,7 @@ class EventUpdate(BaseModel):
     start_time: datetime = "2024-05-01T12:00:00"
     end_time: datetime = "2024-05-01T13:00:00"
     user_id: str = None
-    room_id: str = "Online"
+    room: int = 1
 
 
 
