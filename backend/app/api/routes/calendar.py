@@ -5,7 +5,7 @@ from typing import Any, List, Optional  # noqa: UP035
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from app.api.deps import CurrentUser
+from app.api.deps import CurrentUser, require_auth
 from app.api.schemas import EventCreate, EventUpdate
 from app.core.db import database
 
@@ -156,7 +156,8 @@ async def get_events(
 
 
 @router.get("/events/{event_id}")
-async def get_event(event_id: int, current_user: CurrentUser):
+@require_auth
+async def get_event(event_id: int):
     event = await database.fetchrow(
         """
             SELECT *
@@ -173,7 +174,8 @@ async def get_event(event_id: int, current_user: CurrentUser):
 
 
 @router.put("/events/{event_id}")
-async def update_event(event_id: int, event_update: EventUpdate, current_user: CurrentUser):
+@require_auth
+async def update_event(event_id: int, event_update: EventUpdate):
     existing_event = await database.fetchrow(
         """
             SELECT 1

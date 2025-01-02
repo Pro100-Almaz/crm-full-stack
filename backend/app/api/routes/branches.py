@@ -5,7 +5,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from starlette.status import HTTP_404_NOT_FOUND
 
-from app.api.deps import CurrentUser
+from app.api.deps import CurrentUser, require_auth
 from app.api.schemas import Branch
 from app.core.db import database
 
@@ -180,3 +180,29 @@ async def delete_branch(
             raise HTTPException(status_code=400, detail="Insertion error")
     else:
         raise HTTPException(status_code=403, detail="Forbidden, has no enough authority")
+
+
+@router.get("/branch_groups")
+@require_auth
+async def get_branch_group():
+    groups = await database.fetch(
+        """
+            SELECT *
+            FROM public.branchgroup;
+        """
+    )
+
+    return {"Status": "success", "status_code": 200, "groups": groups}
+
+@router.post("/branch_groups")
+@require_auth
+async def add_branch_group(name: str):
+    uuid4 = uuid.uuid4()
+    await database.execute(
+        """
+            INSERT INTO public.branchgroup (id, name)
+            VALUES ($1, $2);
+        """, uuid4, name
+    )
+
+    return {"Status": "success", "status_code": 200}
