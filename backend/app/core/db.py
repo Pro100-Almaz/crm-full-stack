@@ -66,32 +66,10 @@ class Database:
             return await connection.execute(query, *args)
 
 
-# class RedisDatabase:
-#     def __init__(self):
-#         self.r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
-#
-#     def get_user_token(self, user_id):
-#         return self.r.get(f"{user_id}:session")
-#
-#     def set_user_token(self, user_id, token):
-#         return self.r.set(f"{user_id}:session", token)
-#
-#     def get_top_5_tickers(self):
-#         stored_data = self.r.get('funding:top:5:tickets')
-#
-#         if stored_data:
-#             data = stored_data.decode('utf-8')
-#             return json.loads(data)
-#         return None
-#
-#     def get_top_5_tickers_by_volume(self):
-#         stored_data = self.r.get('funding:top:5:tickets:volume')
-#
-#         if stored_data:
-#             data = stored_data.decode('utf-8')
-#             return json.loads(data)
-#         return None
+class RedisDatabase:
+    def __init__(self):
+        self.r = redis.Redis(host="localhost", port=6379, db=0)
 
 
 database = Database()
-# redis_database = RedisDatabase()
+redis_database = RedisDatabase()
