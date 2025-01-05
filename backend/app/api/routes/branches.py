@@ -185,8 +185,7 @@ async def delete_branch(
         raise HTTPException(status_code=403, detail="Forbidden, has no enough authority")
 
 
-@router.get("/branch_groups")
-@require_auth
+@router.get("/branch_groups/")
 async def get_branch_group():
     groups = await database.fetch(
         """
@@ -197,15 +196,15 @@ async def get_branch_group():
 
     return {"Status": "success", "status_code": 200, "groups": groups}
 
-@router.post("/branch_groups")
+
+@router.post("/branch_groups/")
 @require_auth
 async def add_branch_group(name: str):
-    uuid4 = uuid.uuid4()
     await database.execute(
         """
             INSERT INTO public.branchgroup (id, name)
-            VALUES ($1, $2);
-        """, uuid4, name
+            VALUES (gen_random_uuid(), $1);
+        """, name
     )
 
     return {"Status": "success", "status_code": 200}

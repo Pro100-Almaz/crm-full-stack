@@ -156,7 +156,6 @@ async def get_events(
 
 
 @router.get("/events/{event_id}")
-@require_auth
 async def get_event(event_id: int):
     event = await database.fetchrow(
         """
