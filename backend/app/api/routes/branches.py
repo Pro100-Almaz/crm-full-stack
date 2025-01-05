@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException
 from starlette.status import HTTP_404_NOT_FOUND
 
 from app.api.deps import CurrentUser, require_auth
-from app.api.schemas import Branch
+from app.api.schemas import Branch, BranchBasic
 from app.core.db import database
 
 router = APIRouter()
@@ -39,7 +39,7 @@ async def read_branch(branch_id: uuid.UUID):
 
 @router.post("/")
 async def create_branch(
-    *, branch: Branch, current_user: CurrentUser
+    *, branch: BranchBasic, current_user: CurrentUser
 ) -> Any:
     has_authority = await database.fetchrow(
         """
@@ -65,6 +65,9 @@ async def create_branch(
 
             branch.group_id = group_id["id"]
 
+        if not branch.responsible_for_aa or branch.responsible_for_aa == "string":
+            branch.responsible_for_aa = current_user.id
+
         try:
             uuid4 = uuid.uuid4()
 
@@ -82,7 +85,7 @@ async def create_branch(
             return {"Status": "success", "status_code": 201}
 
         except Exception as e:
-            raise HTTPException(status_code=400, detail="Insertion error")
+            raise HTTPException(status_code=400, detail="Insertion error, text: {}".format(e))
 
     raise HTTPException(status_code=403, detail="Forbidden, has no enough authority")
 

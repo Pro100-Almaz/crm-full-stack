@@ -4,8 +4,7 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
-class Branch(BaseModel):
-    id: str = None
+class BranchBasic(BaseModel):
     name: str
     internal_name: str = None
     abbreviation: str = "Основной филиал"
@@ -20,6 +19,10 @@ class Branch(BaseModel):
     responsible_for_aa: str = None
     display_color: str = None
     send_notification: dict = {}
+
+
+class Branch(BranchBasic):
+    id: str = None
 
 
 class EventBase(BaseModel):
