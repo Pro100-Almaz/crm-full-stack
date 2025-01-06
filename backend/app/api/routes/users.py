@@ -1,7 +1,9 @@
+import os
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
+from fastapi.responses import FileResponse
 from sqlmodel import col, delete, func, select
 
 from app import crud
@@ -26,6 +28,8 @@ from app.models import (
 from app.utils import generate_new_account_email, send_email
 
 router = APIRouter()
+
+UPLOAD_FOLDER = "uploads"
 
 
 @router.get(
@@ -221,3 +225,42 @@ def delete_user(
     session.delete(user)
     session.commit()
     return Message(message="User deleted successfully")
+
+
+@router.post("/upload-photo/")
+async def upload_photo(file: UploadFile = File(...)):
+    """
+    Accepts an image file upload and saves it locally.
+    Returns file info, or raises an error if file is invalid.
+    """
+    ALLOWED_EXTENSIONS = {"image/jpeg", "image/png", "image/jpg"}
+    if file.content_type not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Invalid file type. Only JPG/PNG images are accepted.")
+
+    if not os.path.exists(UPLOAD_FOLDER):
+        os.makedirs(UPLOAD_FOLDER)
+
+    file_extension = file.filename.split('.')[-1]
+    unique_filename = f"{uuid.uuid4()}.{file_extension}"
+
+    file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
+
+    # Save the file to disk
+    with open(file_path, "wb") as buffer:
+        content = await file.read()
+        buffer.write(content)
+
+    return {"filename": unique_filename, "content_type": file.content_type}
+
+
+@router.get("/photo/{filename}")
+def get_photo(filename: str):
+    """
+    Retrieve the photo from the uploads folder by filename.
+    """
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
+
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+
+    return FileResponse(file_path)
