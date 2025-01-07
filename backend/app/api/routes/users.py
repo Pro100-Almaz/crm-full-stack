@@ -13,6 +13,7 @@ from app.api.deps import (
     get_current_active_superuser,
 )
 from app.core.config import settings
+from app.core.db import database
 from app.core.security import get_password_hash, verify_password
 from app.models import (
     Message,
@@ -228,7 +229,7 @@ def delete_user(
 
 
 @router.post("/upload-photo/")
-async def upload_photo(file: UploadFile = File(...)):
+async def upload_photo(current_user: CurrentUser, file: UploadFile = File(...)):
     """
     Accepts an image file upload and saves it locally.
     Returns file info, or raises an error if file is invalid.
@@ -245,6 +246,14 @@ async def upload_photo(file: UploadFile = File(...)):
 
     file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
 
+    await database.execute(
+        """
+            UPDATE public.user 
+            SET photo = $2
+            WHERE id = $1;
+        """, current_user.id, unique_filename
+    )
+
     # Save the file to disk
     with open(file_path, "wb") as buffer:
         content = await file.read()
@@ -253,12 +262,31 @@ async def upload_photo(file: UploadFile = File(...)):
     return {"filename": unique_filename, "content_type": file.content_type}
 
 
-@router.get("/photo/{filename}")
+@router.get("/file/{filename}")
 def get_photo(filename: str):
     """
     Retrieve the photo from the uploads folder by filename.
     """
     file_path = os.path.join(UPLOAD_FOLDER, filename)
+
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+
+    return FileResponse(file_path)
+
+
+@router.get("/photo/avatar/")
+async def get_avatar(current_user: CurrentUser):
+    filename = await database.fetchrow(
+        """
+            SELECT photo FROM public.user WHERE id = $1;
+        """, current_user.id
+    )
+
+    if filename is None:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    file_path = os.path.join(UPLOAD_FOLDER, filename.get("photo"))
 
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found")
