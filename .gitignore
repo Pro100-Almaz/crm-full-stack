@@ -22,3 +22,4 @@ traefik.yml
 docker-compose.yml
 docker-compose.override.yml
 docker-compose.traefik.yml
+docker-compose.traefik-dev.yml
