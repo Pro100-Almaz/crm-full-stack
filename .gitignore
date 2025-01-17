@@ -9,6 +9,7 @@ venv/
 traefik.yml
 
 /frontend
+/webhook
 
 /backend/__pycache__
 /backend/app.egg-info
