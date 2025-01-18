@@ -1,3 +1,4 @@
+import aio_pika
 import sentry_sdk
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
@@ -10,6 +11,8 @@ from app.core.db import database
 
 def custom_generate_unique_id(route: APIRoute) -> str:
     return f"{route.tags[0]}-{route.name}"
+
+RABBITMQ_URL = f"amqp://{settings.RABBITMQ_USER}:{settings.RABBITMQ_PASSWORD}@localhost/"
 
 
 if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
@@ -37,6 +40,10 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 @app.on_event("startup")
 async def startup():
     await database.connect()
+
+    app.state.rabbit_connection = await aio_pika.connect_robust(RABBITMQ_URL)
+    app.state.rabbit_channel = await app.state.rabbit_connection.channel()
+    await app.state.rabbit_channel.declare_queue("my_queue", durable=True)
 
 @app.on_event("shutdown")
 async def shutdown():

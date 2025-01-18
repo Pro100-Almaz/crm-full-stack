@@ -23,6 +23,7 @@ dependencies = [
     "pyjwt<3.0.0,>=2.8.0",
     "redis>=5.2.1",
     "asyncpg>=0.30.0",
+    "aio-pika>=9.5.4",
 ]
 
 [tool.uv]

@@ -10,6 +10,7 @@ traefik.yml
 
 /frontend
 /webhook
+/rabbitmq
 
 /backend/__pycache__
 /backend/app.egg-info

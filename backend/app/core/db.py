@@ -1,5 +1,3 @@
-import json
-
 import asyncpg
 import redis
 from sqlmodel import Session, create_engine, select
