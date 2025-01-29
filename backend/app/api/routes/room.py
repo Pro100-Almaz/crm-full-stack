@@ -44,14 +44,15 @@ async def create_branch(
     *, room_name: str, branch_id: uuid.UUID
 ) -> Any:
     try:
-        room = database.fetchrow(
+        room = await database.fetchrow(
             """
                 INSERT INTO public.room (name, branch_id)
-                VALUES ($1, $2);
+                VALUES ($1, $2)
+                RETURNING id;
             """, room_name, branch_id
         )
 
-        return {"Status": "success", "status_code": 201, "room": room}
+        return {"Status": "success", "status_code": 201, "room": room.get('id')}
 
     except Exception as e:
         raise HTTPException(status_code=400, detail="Insertion error")
@@ -96,7 +97,7 @@ async def update_room(
 @require_auth
 async def delete_room(room_id: int) -> Any:
     try:
-        database.execute(
+        await database.execute(
             """
                 DELETE FROM public.room
                 WHERE id = $1;
