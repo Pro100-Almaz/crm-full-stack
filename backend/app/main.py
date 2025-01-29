@@ -41,9 +41,9 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 async def startup():
     await database.connect()
 
-    app.state.rabbit_connection = await aio_pika.connect_robust(RABBITMQ_URL)
-    app.state.rabbit_channel = await app.state.rabbit_connection.channel()
-    await app.state.rabbit_channel.declare_queue("my_queue", durable=True)
+    # app.state.rabbit_connection = await aio_pika.connect_robust(RABBITMQ_URL)
+    # app.state.rabbit_channel = await app.state.rabbit_connection.channel()
+    # await app.state.rabbit_channel.declare_queue("my_queue", durable=True)
 
 @app.on_event("shutdown")
 async def shutdown():
